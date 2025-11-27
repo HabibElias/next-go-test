@@ -1,0 +1,12 @@
+services:
+  postgres:
+    image: postgres:12
+    restart: always
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    env_file:
+      .env
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+volumes:
+  db_data:
