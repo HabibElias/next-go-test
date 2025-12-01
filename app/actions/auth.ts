@@ -1,24 +1,26 @@
 'use server'
-
+import type { LoginSchema } from '@/lib/schema/login_schema'
 import { cookies } from 'next/headers'
 
-export async function login(email: string, password: string) {
-  // eslint-disable-next-line node/prefer-global/process
-  const res = await fetch(`${process.env.BASE_URL}/auth/login`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, password }),
-  })
-  if (!res.ok)
-    throw new Error('Invalid credentials')
+export async function onLogin(data: LoginSchema) {
+  try {
+    const cookieStore = await cookies()
+    const res = await fetch(`http://localhost:8000/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: data.email, password: data.password }),
+    })
 
-  const { token } = await res.json();
+    const payload = await res.json()
 
-  // Set cookie
-  (await cookies()).set('token', token, {
-    httpOnly: true,
-    secure: false,
-    sameSite: 'strict',
-    path: '/',
-  })
+    if (!res.ok) {
+      throw new Error(payload.error ?? 'Somethings Wrong')
+    }
+
+    cookieStore.set('token', payload.token)
+    return payload
+  }
+  catch (err) {
+    console.error(err)
+  }
 }

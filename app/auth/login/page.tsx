@@ -1,14 +1,16 @@
 'use client'
+
 import type { LoginSchema } from '@/lib/schema/login_schema'
 import { zodResolver } from '@hookform/resolvers/zod'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
+import { onLogin } from '@/app/actions/auth'
 import { loginSchema } from '@/lib/schema/login_schema'
 import { useAuthStore } from '@/store/useAuthStore'
 
-function login() {
+function Login() {
   const { register, handleSubmit, formState: { errors, isSubmitting } }
     = useForm<LoginSchema>({
       resolver: zodResolver(loginSchema),
@@ -20,29 +22,17 @@ function login() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
   async function onSubmit(data: LoginSchema) {
-    try {
-      const res = await fetch(`http://localhost:8000/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: data.email, password: data.password }),
-      })
+    const result = await onLogin(data)
 
-      const payload = await res.json()
-
-      if (!res.ok) {
-        throw new Error(payload.error ?? 'Somethings Wrong')
-      }
-
-      setToken(payload.token)
-      setUser(payload.user)
-
-      // Backend should set an HttpOnly cookie via Set-Cookie; we don't receive token in JS.
-      setErrorMessage(null)
+    if (result.token) {
+      setToken(result.user) // 🔥 update Zustand on client
+    }
+    if (result.user) {
+      setUser(result.user) // 🔥 update Zustand on client
       router.push('/')
     }
-    catch (err) {
-      console.error(err)
-      setErrorMessage(err instanceof Error ? err.message : String(err))
+    else {
+      setErrorMessage('Something went wrong')
     }
   }
 
@@ -73,4 +63,4 @@ function login() {
   )
 }
 
-export default login
+export default Login
